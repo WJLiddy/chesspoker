@@ -64,10 +64,6 @@ public class ChessBoard
     }
 
     // precached moves for faster move generation
-    static private int[][] pawnMoves =
-    {
-        new int[] { 0, -1},
-    };
 
     static private int[][] knightMoves =
     {
@@ -121,8 +117,8 @@ public class ChessBoard
     public List<ChessBoard> generatePMoves(int x, int y)
     {
         List<ChessBoard> boards = new List<ChessBoard>();
-        int newX = x + pawnMoves[0][0];
-        int newY = y + pawnMoves[0][1];
+        int newX = x;
+        int newY = y - 1;
         if (inBounds(newX, newY) && board[newX, newY] == '\0')
         {
             var nbState = movePiece(x, y, newX, newY);
@@ -132,6 +128,18 @@ public class ChessBoard
                 nbState.board[newX, newY] = 'Q';
             }
             boards.Add(nbState);
+        }
+
+        if (inBounds(newX-1, newY) && board[newX-1, newY] != '\0' && !active(board[newX-1,newY]))
+        {
+            // take
+            boards.Add(movePiece(x, y, newX - 1, newY));
+        }
+
+        if (inBounds(newX + 1, newY) && board[newX + 1, newY] != '\0' && !active(board[newX + 1, newY]))
+        {
+            // take
+            boards.Add(movePiece(x, y, newX + 1, newY));
         }
         return boards;
     }
@@ -279,5 +287,20 @@ public class ChessBoard
             }
         }
         return generated;
+    }
+
+    public bool gameOverActive()
+    {
+        for(int x = 0; x != BOARD_DIM; x++)
+        {
+            for(int y = 0; y != BOARD_DIM; y++)
+            {
+                if (board[x,y] == 'K')
+                {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 }

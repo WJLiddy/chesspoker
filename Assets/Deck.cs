@@ -40,55 +40,6 @@ public class Deck
             Rank = rank;
         }
     }
-    public enum HandRank
-    {
-        HighCard,
-        OnePair,
-        TwoPair,
-        ThreeOfAKind,
-        Straight,
-        Flush,
-        FullHouse,
-        FourOfAKind,
-        StraightFlush,
-        RoyalFlush
-    }
-
-    public HandRank EvaluateHand(List<Card> hand)
-    {
-        if (IsRoyalFlush(hand)) return HandRank.RoyalFlush;
-        if (IsStraightFlush(hand)) return HandRank.StraightFlush;
-        if (IsFourOfAKind(hand)) return HandRank.FourOfAKind;
-        if (IsFullHouse(hand)) return HandRank.FullHouse;
-        if (IsFlush(hand)) return HandRank.Flush;
-        if (IsStraight(hand)) return HandRank.Straight;
-        if (IsThreeOfAKind(hand)) return HandRank.ThreeOfAKind;
-        if (IsTwoPair(hand)) return HandRank.TwoPair;
-        if (IsOnePair(hand)) return HandRank.OnePair;
-        return HandRank.HighCard;
-    }
-
-    private bool IsRoyalFlush(List<Card> hand)
-    {
-        return IsStraightFlush(hand) && hand.All(card => card.Rank >= Rank.Ten);
-    }
-
-    private bool IsStraightFlush(List<Card> hand)
-    {
-        return IsFlush(hand) && IsStraight(hand);
-    }
-
-    public static bool IsFourOfAKind(List<Card> hand)
-    {
-        var rankGroups = hand.GroupBy(card => card.Rank);
-        return rankGroups.Any(group => group.Count() == 4);
-    }
-
-    public static bool IsFullHouse(List<Card> hand)
-    {
-        var rankGroups = hand.GroupBy(card => card.Rank);
-        return rankGroups.Any(group => group.Count() == 3) && rankGroups.Any(group => group.Count() == 2);
-    }
 
     public static bool IsFlush(List<Card> hand)
     {
@@ -120,19 +71,42 @@ public class Deck
         return rankGroups.Any(group => group.Count() == 3);
     }
 
-    private bool IsTwoPair(List<Card> hand)
+    public static bool IsTwoPair(List<Card> hand)
     {
         var rankGroups = hand.GroupBy(card => card.Rank);
         return rankGroups.Count(group => group.Count() == 2) == 2;
     }
-
-    private bool IsOnePair(List<Card> hand)
+    public static bool IsOnePair(List<Card> hand)
     {
         var rankGroups = hand.GroupBy(card => card.Rank);
         return rankGroups.Any(group => group.Count() == 2);
     }
+    /**
+private bool IsRoyalFlush(List<Card> hand)
+{
+return IsStraightFlush(hand) && hand.All(card => card.Rank >= Rank.Ten);
+}
 
-    private static void Shuffle<T>(IList<T> list)
+private bool IsStraightFlush(List<Card> hand)
+{
+return IsFlush(hand) && IsStraight(hand);
+}    public static bool IsFourOfAKind(List<Card> hand)
+{
+    var rankGroups = hand.GroupBy(card => card.Rank);
+    return rankGroups.Any(group => group.Count() == 4);
+}
+
+public static bool IsFullHouse(List<Card> hand)
+{
+    var rankGroups = hand.GroupBy(card => card.Rank);
+    return rankGroups.Any(group => group.Count() == 3) && rankGroups.Any(group => group.Count() == 2);
+}
+    */
+
+
+
+
+    public static void Shuffle<T>(IList<T> list)
     {
         System.Random rng = new System.Random();
         int n = list.Count;

@@ -50,7 +50,7 @@ public class ChessboardGraphic : MonoBehaviour
         list = new List<GameObject>();
     }
 
-    public void ApplyPieces(ChessBoard cb, bool flipped)
+    public void ApplyPieces(ChessBoard cb, bool flipped, int activePlayerHandVal)
     {
         foreach(var v in list)
         {
@@ -74,22 +74,46 @@ public class ChessboardGraphic : MonoBehaviour
                 {
                     case 'P':
                     v = Instantiate(pieceP);
+                        if(GameManager.pieceMatchesValue('P',activePlayerHandVal))
+                        {
+                            v.GetComponent<SpriteRenderer>().color = Color.yellow;
+                        }
                     break;
                     case 'R':
                     v = Instantiate(pieceR);
-                    break;
+                        if (GameManager.pieceMatchesValue('R', activePlayerHandVal))
+                        {
+                            v.GetComponent<SpriteRenderer>().color = Color.yellow;
+                        }
+                        break;
                     case 'N':
                     v = Instantiate(pieceN);
-                    break;
+                        if (GameManager.pieceMatchesValue('N', activePlayerHandVal))
+                        {
+                            v.GetComponent<SpriteRenderer>().color = Color.yellow;
+                        }
+                        break;
                     case 'B':
                     v = Instantiate(pieceB);
-                    break;
+                        if (GameManager.pieceMatchesValue('B', activePlayerHandVal))
+                        {
+                            v.GetComponent<SpriteRenderer>().color = Color.yellow;
+                        }
+                        break;
                     case 'Q':
                     v = Instantiate(pieceQ);
-                    break;
+                        if (GameManager.pieceMatchesValue('Q', activePlayerHandVal))
+                        {
+                            v.GetComponent<SpriteRenderer>().color = Color.yellow;
+                        }
+                        break;
                     case 'K':
                     v = Instantiate(pieceK);
-                    break;
+                        if (GameManager.pieceMatchesValue('K', activePlayerHandVal))
+                        {
+                            v.GetComponent<SpriteRenderer>().color = Color.yellow;
+                        }
+                        break;
 
                     case 'p':
                     v = Instantiate(piecep);
