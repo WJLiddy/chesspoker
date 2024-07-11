@@ -53,8 +53,10 @@ public class ChessPokerAI : MonoBehaviour
         return sum;
     }
       
-
-    public static Tuple<ChessBoard,int> minimax(ChessBoard node, int depth, bool maximize)
+    // next, add handlevel, only pass in what's moveable.
+    // huge improvement would be to add 1 pt to eval for a check
+    // returns a null chessboard if we should try to remove the hand.
+    public static Tuple<ChessBoard,int> minimax(ChessBoard node, int depth, bool maximize, List<Deck.Card> hand)
     {
         if (depth == 0 || gameOver(node))
         {
@@ -75,11 +77,12 @@ public class ChessPokerAI : MonoBehaviour
             Tuple<ChessBoard, int> bestMove = new Tuple<ChessBoard, int>(null, int.MinValue);
 
             //shuffle eq moves, so equivalent moves are not preferred.
-            var shuf = node.generateMoves();
+            var shuf = node.generateMoves(GameManager.getHandLevel(hand));
             shuf.Shuffle();
             foreach (var n in shuf)
             {
-                var result = minimax(n.flipBoard(), depth - 1, false);
+                // improve pair and straighr
+                var result = minimax(n.flipBoard(), depth - 1, false, hand);
                 if (result.Item2 > bestMove.Item2)
                 {
                     bestMove = new Tuple<ChessBoard, int>(n, result.Item2);
@@ -90,9 +93,10 @@ public class ChessPokerAI : MonoBehaviour
         else
         {
             Tuple<ChessBoard, int> worstMove = new Tuple<ChessBoard, int>(null, int.MaxValue);
-            foreach (var n in node.generateMoves())
+            // always assume the opponent has max move
+            foreach (var n in node.generateMoves(10))
             {
-                var result = minimax(n.flipBoard(), depth - 1, true);
+                var result = minimax(n.flipBoard(), depth - 1, true, hand);
                 if (result.Item2 < worstMove.Item2)
                 {
                     worstMove = new Tuple<ChessBoard, int>(n, result.Item2);

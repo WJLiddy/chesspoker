@@ -21,6 +21,7 @@ public class GameManager : MonoBehaviour
     private float timer = -1f;
 
     private List<Deck.Card> playerHand = new List<Deck.Card>();
+    private List<Deck.Card> aiHand = new List<Deck.Card>();
 
     public Dictionary<Vector2Int, ChessBoard> availableMoves;
 
@@ -46,7 +47,7 @@ public class GameManager : MonoBehaviour
         }
         handG.makeHand(playerHand, raised);
         updateScoreDisp(false);
-        boardG.ApplyPieces(board, flipped, getPlayerHandLevel());
+        boardG.ApplyPieces(board, flipped, getHandLevel(playerHand));
         exchange.color = Color.gray;
 
         switch(DIFFICULTY)
@@ -73,22 +74,21 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    int getPlayerHandLevel()
+    public static int getHandLevel(List<Deck.Card> hand)
     {
-        return 4;
-        if(Deck.IsFlush(playerHand) || Deck.IsStraight(playerHand))
+        if(Deck.IsFlush(hand) || Deck.IsStraight(hand))
         {
             return 4;
         }
-        if (Deck.IsThreeOfAKind(playerHand))
+        if (Deck.IsThreeOfAKind(hand))
         {
             return 3;
         }
-        if (Deck.IsTwoPair(playerHand))
+        if (Deck.IsTwoPair(hand))
         {
             return 2;
         }
-        if (Deck.IsOnePair(playerHand))
+        if (Deck.IsOnePair(hand))
         {
             return 1;
         }
@@ -101,8 +101,8 @@ public class GameManager : MonoBehaviour
         {
             foreach (var v in scoreUI[i].GetComponentsInChildren<Image>())
             {
-                scoreUI[i].GetComponentInChildren<TMP_Text>(v).color = (clear || i > getPlayerHandLevel()) ? Color.white : Color.yellow;
-                v.color = (clear || i > getPlayerHandLevel()) ? Color.white : Color.yellow;
+                scoreUI[i].GetComponentInChildren<TMP_Text>(v).color = (clear || i > getHandLevel(playerHand)) ? Color.white : Color.yellow;
+                v.color = (clear || i > getHandLevel(playerHand)) ? Color.white : Color.yellow;
             }
         }
     }
@@ -120,7 +120,8 @@ public class GameManager : MonoBehaviour
             timer += Time.deltaTime;
             if (timer > 0)
             {
-                applyMove(ChessPokerAI.minimax(board,DIFFICULTY,true).Item1);
+                // eval aihand
+                applyMove(ChessPokerAI.minimax(board, DIFFICULTY,true, aiHand).Item1);
                 timer = -1;
             }
         }
@@ -131,7 +132,7 @@ public class GameManager : MonoBehaviour
         board = next;
         board = board.flipBoard();
         flipped = !flipped;
-        boardG.ApplyPieces(board, flipped, flipped ? -1 : getPlayerHandLevel());
+        boardG.ApplyPieces(board, flipped, flipped ? -1 : getHandLevel(playerHand));
         updateScoreDisp(flipped);
         if(board.gameOverActive())
         {
@@ -189,7 +190,7 @@ public class GameManager : MonoBehaviour
         else
         {
             // only piece permitted is based on player's hand value
-            if (!pieceMatchesValue(board.board[x,y], getPlayerHandLevel()))
+            if (!pieceMatchesValue(board.board[x,y], getHandLevel(playerHand)))
             {
                 return;
             }

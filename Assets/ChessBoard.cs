@@ -272,13 +272,14 @@ public class ChessBoard
         return null;
     }
 
-    public List<ChessBoard> generateMoves()
+    public List<ChessBoard> generateMoves(int handLevel)
     {
         List<ChessBoard> generated = new List<ChessBoard>();
         for (int y = 0; y != BOARD_DIM; ++y)
         {
             for (int x = 0; x != BOARD_DIM; ++x)
             {
+                // show moves
                 var moves = movesForPiece(x, y);
                 if (moves != null)
                 {
