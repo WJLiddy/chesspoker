@@ -23,7 +23,7 @@ public class HandGraphic : MonoBehaviour
         oldCards.Add(v);
     }
 
-    public void makeHand(List<Deck.Card> cards, List<bool> raised)
+    public void renderHand(List<Deck.Card> cards, List<bool> raised)
     {
         foreach(var v in oldCards)
         {

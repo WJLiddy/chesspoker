@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
@@ -20,6 +21,7 @@ public class GameManager : MonoBehaviour
     private bool flipped = false;
     private float timer = -1f;
 
+    public bool gameOverFlag = false;
     private List<Deck.Card> playerHand = new List<Deck.Card>();
     private List<Deck.Card> aiHand = new List<Deck.Card>();
 
@@ -28,6 +30,7 @@ public class GameManager : MonoBehaviour
     public GameObject[] scoreUI;
 
     public TMPro.TMP_Text exchange;
+    public TMPro.TMP_Text nextGameText;
 
     public TMPro.TMP_Text gameOverText;
     public bool gameOver;
@@ -43,9 +46,15 @@ public class GameManager : MonoBehaviour
         {
             playerHand.Add(deck[0]);
             deck.RemoveAt(0);
+
+            aiHand.Add(deck[0]);
+            deck.RemoveAt(0);
+
             raised.Add(false);
         }
-        handG.makeHand(playerHand, raised);
+        Debug.Assert(deck.Count == 42);
+
+        handG.renderHand(playerHand, raised);
         updateScoreDisp(false);
         boardG.ApplyPieces(board, flipped, getHandLevel(playerHand));
         exchange.color = Color.gray;
@@ -136,10 +145,25 @@ public class GameManager : MonoBehaviour
         updateScoreDisp(flipped);
         if(board.gameOverActive())
         {
+            gameOverFlag = true;
             // show text
             gameOverText.text = flipped ? "WHITE WINS." : "BLACK WINS.";
+            // show game over
+            nextGameText.text = flipped ? "NEXT GAME" : "TRY AGAIN";
+            if (flipped)
+            {
+                DIFFICULTY += 1;
+            }
         }
+    }
 
+    public void nextGame()
+    {
+        if(!gameOverFlag)
+        {
+            return;
+        }
+        SceneManager.LoadScene(0);
     }
 
     // find what actually changed on the boardstate and highlight. Exlude start sq
@@ -236,7 +260,7 @@ public class GameManager : MonoBehaviour
         }
 
         raised[index] = !raised[index];
-        handG.makeHand(playerHand, raised);
+        handG.renderHand(playerHand, raised);
         if(raised.Any(r => r))
         {
             exchange.color = Color.white;
@@ -273,8 +297,9 @@ public class GameManager : MonoBehaviour
                 raised[i] = false;
             }
         }
-        handG.makeHand(playerHand, raised);
+        handG.renderHand(playerHand, raised);
         Deck.Shuffle(deck);
+        Debug.Assert(deck.Count == 42);
     }
 
     //private 

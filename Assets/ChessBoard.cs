@@ -133,13 +133,25 @@ public class ChessBoard
         if (inBounds(newX-1, newY) && board[newX-1, newY] != '\0' && !active(board[newX-1,newY]))
         {
             // take
-            boards.Add(movePiece(x, y, newX - 1, newY));
+            var nbState = movePiece(x, y, newX - 1, newY);
+            // queen promote
+            if (newY == 0)
+            {
+                nbState.board[newX - 1, newY] = 'Q';
+            }
+            boards.Add(nbState);
         }
 
         if (inBounds(newX + 1, newY) && board[newX + 1, newY] != '\0' && !active(board[newX + 1, newY]))
         {
             // take
-            boards.Add(movePiece(x, y, newX + 1, newY));
+            var nbState = movePiece(x, y, newX + 1, newY);
+            // queen promote
+            if (newY == 0)
+            {
+                nbState.board[newX + 1, newY] = 'Q';
+            }
+            boards.Add(nbState);
         }
         return boards;
     }
@@ -261,7 +273,6 @@ public class ChessBoard
     {
         switch (board[x, y])
         {
-            case '\0': return null;
             case 'K': return generateKMoves(x, y);
             case 'Q': var q = generateRMoves(x, y); q.AddRange(generateBMoves(x, y)); return q;
             case 'R': return generateRMoves(x, y);
@@ -280,9 +291,9 @@ public class ChessBoard
             for (int x = 0; x != BOARD_DIM; ++x)
             {
                 // show moves
-                var moves = movesForPiece(x, y);
-                if (moves != null)
+                if (char.IsUpper(board[x,y]) && GameManager.pieceMatchesValue(board[x, y], handLevel))
                 {
+                    var moves = movesForPiece(x, y);
                     generated.AddRange(moves);
                 }
             }

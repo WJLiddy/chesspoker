@@ -94,7 +94,7 @@ public class ChessPokerAI : MonoBehaviour
         {
             Tuple<ChessBoard, int> worstMove = new Tuple<ChessBoard, int>(null, int.MaxValue);
             // always assume the opponent has max move
-            foreach (var n in node.generateMoves(10))
+            foreach (var n in node.generateMoves(4))
             {
                 var result = minimax(n.flipBoard(), depth - 1, true, hand);
                 if (result.Item2 < worstMove.Item2)
