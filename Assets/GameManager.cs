@@ -3,9 +3,11 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using UnityEngine.XR;
 
 public class GameManager : MonoBehaviour
 {
@@ -26,7 +28,7 @@ public class GameManager : MonoBehaviour
     public ChessboardGraphic boardG;
 
     private bool flipped = false;
-    private float timer = -2f;
+    private float timer = -3f;
 
     public bool gameOverFlag = false;
 
@@ -56,6 +58,7 @@ public class GameManager : MonoBehaviour
             deck.RemoveAt(0);
 
             playerRaisedCard.Add(false);
+            aiRaisedCard.Add(false);
         }
 
         playerHandGraphic.renderHand(playerHand, playerRaisedCard, true);
@@ -134,11 +137,11 @@ public class GameManager : MonoBehaviour
         {
             timer += Time.deltaTime;
 
-            if (timer > -1.5 && aiNextBoard == null)
+            if (timer > -2.5 && aiNextBoard == null)
             {
                 Debug.Log("AI HAS " + getHandLevel(aiHand));
                 aiNextBoard = ChessPokerAI.minimax(board, DIFFICULTY, true, aiHand).Item1;
-                aiRaisedCard = getAIExchange(!aiNextBoard.flipBoard().equals(board));
+                aiRaisedCard = getAIExchange(!aiNextBoard.equals(board));
                 aiHandGraphic.renderHand(aiHand, aiRaisedCard, true);
             }
                   
@@ -147,7 +150,7 @@ public class GameManager : MonoBehaviour
                 // AI chose not to make a move - so improve hand.
                 exchangeCardsAI(); 
                 applyMove(aiNextBoard);
-                timer = -2;
+                timer = -3;
                 aiNextBoard  = null;
             }
         }
@@ -319,16 +322,120 @@ public class GameManager : MonoBehaviour
         Debug.Assert(deck.Count == (7*4 - 10));
     }
 
+    // this method is hideous
+    private List<bool> goForStraightOrFlush()
+    {
+        var retVal = new List<bool> { false, false, false, false, false };
+
+        // sort by rank
+        var sortedAIHand = new List<Deck.Card>(aiHand);
+        sortedAIHand.Sort((a, b) => a.Rank.CompareTo(b.Rank));
+
+        // == STRAIGHT WITH LOW CARD ==
+        bool foundSorF = true;
+        // check for four-to-an-outside straight low cards. (will also include 8-low straights but IDK)
+        for(int i = 0; i != 4; ++i)
+        {
+            if (sortedAIHand[i].Rank + 1 != sortedAIHand[i].Rank)
+            {
+                // nope!
+                foundSorF = false;
+                break;
+            }
+        }
+
+        if (foundSorF)
+        {
+            Debug.Log("AI has low straight");
+            // discard the highest card, it's not part of the straight.
+            retVal[sortedAIHand.FindIndex(i => (i.Rank == sortedAIHand[4].Rank))] = true;
+            return retVal;
+        }
+
+        foundSorF = true;
+
+        // == STRAIGHT WITH HI CARD ==
+        for (int i = 1; i != 5; ++i)
+        {
+            if (sortedAIHand[i].Rank + 1 != sortedAIHand[i].Rank)
+            {
+                // nope!
+                foundSorF = false;
+                break;
+            }
+        }
+
+        if (foundSorF)
+        {
+            Debug.Log("AI has hi straight");
+            // discard the lowest card, it's not part of the straight.
+            retVal[sortedAIHand.FindIndex(i => (i.Rank == sortedAIHand[0].Rank))] = true;
+            return retVal;
+        }
+
+        foundSorF = true;
+
+        // see if we're 4 to a flush
+        var fourSuited = sortedAIHand.GroupBy(s => s.Suit).Select(g => g.Count() == 4);
+        if(fourSuited.Count() == 1)
+        {
+            Debug.Log("AI has four to a flush");
+            // get the suit that we have four of.
+            var suit = sortedAIHand.GroupBy(s => s.Suit).Where(g => g.Count() == 4).Select(g => g.Key).FirstOrDefault();
+            // get the index of the suit that doesn't fit
+            var index = sortedAIHand.FindIndex(i => i.Suit != suit);
+            // discard it.
+            retVal[index] = true;
+            return retVal;
+        }
+
+        // all trash.
+        return new List<bool> { true, true, true, true, true };
+    }
+
+    // very flawed but IDK. The "right" way to do this would be to go to minimax and evaluate the possible outcomes for each different card discarded
+    // and weigh each outcome with it's probability, but I'm not exploring this idea any further
     private List<bool> getAIExchange(bool didMove)
     {
         var aiRaised = new List<bool> { false, false, false, false, false };
         if (didMove)
         {
+            Debug.Log("AI DID MOVE.");
             aiRaised = new List<bool> { true, true, true, true, true };
         }
         else
         {
-            aiRaised = new List<bool> { true, true, true, true, true };
+            // if we have a straight or a flush - keep it
+            var handLevel = getHandLevel(aiHand);
+            switch(handLevel)
+            {
+                // high card
+                case 0:
+                    aiRaised = goForStraightOrFlush();
+                    break;
+                // pair or twopair
+                case 1:
+                case 2:
+                    // find the pair, try to improve to 3k
+                    var pair = aiHand.GroupBy(c => c.Rank).Where(g => g.Count() == 2).Select(g => g.Key).FirstOrDefault();
+                    // throw back all cards that ain't a pair
+                    for (int i = 0; i != 5; ++i)
+                    {
+                        if (aiHand[i].Rank != pair)
+                        {
+                            aiRaised[i] = true;
+                        }
+                    }     
+                    break;
+                // three of a kind. If the AI doesn't want to play this, it may want a straight or flush.
+                case 3:
+                    aiRaised = goForStraightOrFlush();
+                    break;
+                case 4:
+                    // do nothing lol
+                    break;
+            }
+            
         }
         return aiRaised;
     }
@@ -352,6 +459,4 @@ public class GameManager : MonoBehaviour
         Debug.Assert(deck.Count == (7 * 4 - 10));
         aiRaisedCard = new List<bool> { false, false, false, false, false };
     }
-
-    //private 
 }

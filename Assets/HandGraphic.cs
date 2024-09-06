@@ -23,7 +23,7 @@ public class HandGraphic : MonoBehaviour
         oldCards.Add(v);
     }
 
-    public void renderHand(List<Deck.Card> cards, List<bool> raised, bool show )
+    public void renderHand(List<Deck.Card> cards, List<bool> raised, bool showAllCards)
     {
         foreach(var v in oldCards)
         {
@@ -32,7 +32,7 @@ public class HandGraphic : MonoBehaviour
         oldCards.Clear();
         for(int i = 0 ; i != cards.Count; ++i)
         {
-            makeCard(!show ? 52 : (((int)cards[i].Rank-2) + (13*((int)cards[i].Suit))), i, raised[i]);
+            makeCard((showAllCards || raised[i]) ? (((int)cards[i].Rank - 2) + (13 * ((int)cards[i].Suit))) : 52 , i, raised[i]);
         }
     }
 
