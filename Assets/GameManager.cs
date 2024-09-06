@@ -142,7 +142,10 @@ public class GameManager : MonoBehaviour
                 Debug.Log("AI HAS " + getHandLevel(aiHand));
                 aiNextBoard = ChessPokerAI.minimax(board, DIFFICULTY, true, aiHand).Item1;
                 aiRaisedCard = getAIExchange(!aiNextBoard.equals(board));
-                aiHandGraphic.renderHand(aiHand, aiRaisedCard, true);
+
+
+                // set TRUE for debug...
+                aiHandGraphic.renderHand(aiHand, aiRaisedCard, false);
             }
                   
             if (timer > 0)
