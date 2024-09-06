@@ -12,20 +12,25 @@ public class GameManager : MonoBehaviour
     public static int DIFFICULTY = 2;
 
     ChessBoard board;
+    ChessBoard aiNextBoard;
     List<Deck.Card> deck;
-    List<bool> raised = new List<bool>();
-
-    public HandGraphic handG;
-    public ChessboardGraphic boardG;
-
-    private bool flipped = false;
-    private float timer = -1f;
-
-    public bool gameOverFlag = false;
     private List<Deck.Card> playerHand = new List<Deck.Card>();
     private List<Deck.Card> aiHand = new List<Deck.Card>();
 
-    public Dictionary<Vector2Int, ChessBoard> availableMoves;
+    List<bool> playerRaisedCard = new List<bool>();
+    List<bool> aiRaisedCard = new List<bool>();
+
+    public HandGraphic playerHandGraphic;
+    public HandGraphic aiHandGraphic;
+
+    public ChessboardGraphic boardG;
+
+    private bool flipped = false;
+    private float timer = -2f;
+
+    public bool gameOverFlag = false;
+
+    public Dictionary<Vector2Int, ChessBoard> availablePlayerMoves;
 
     public GameObject[] scoreUI;
 
@@ -50,11 +55,12 @@ public class GameManager : MonoBehaviour
             aiHand.Add(deck[0]);
             deck.RemoveAt(0);
 
-            raised.Add(false);
+            playerRaisedCard.Add(false);
         }
-        Debug.Assert(deck.Count == 42);
 
-        handG.renderHand(playerHand, raised);
+        playerHandGraphic.renderHand(playerHand, playerRaisedCard, true);
+        aiHandGraphic.renderHand(aiHand, new List<bool> { false, false, false, false, false }, false);
+
         updateScoreDisp(false);
         boardG.ApplyPieces(board, flipped, getHandLevel(playerHand));
         exchange.color = Color.gray;
@@ -127,11 +133,22 @@ public class GameManager : MonoBehaviour
         else
         {
             timer += Time.deltaTime;
+
+            if (timer > -1.5 && aiNextBoard == null)
+            {
+                Debug.Log("AI HAS " + getHandLevel(aiHand));
+                aiNextBoard = ChessPokerAI.minimax(board, DIFFICULTY, true, aiHand).Item1;
+                aiRaisedCard = getAIExchange(!aiNextBoard.flipBoard().equals(board));
+                aiHandGraphic.renderHand(aiHand, aiRaisedCard, true);
+            }
+                  
             if (timer > 0)
             {
-                // eval aihand
-                applyMove(ChessPokerAI.minimax(board, DIFFICULTY,true, aiHand).Item1);
-                timer = -1;
+                // AI chose not to make a move - so improve hand.
+                exchangeCardsAI(); 
+                applyMove(aiNextBoard);
+                timer = -2;
+                aiNextBoard  = null;
             }
         }
     }
@@ -190,21 +207,21 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        if (availableMoves != null)
+        if (availablePlayerMoves != null)
         {
             // look up the move and apply it
-            if(availableMoves.ContainsKey(new Vector2Int( x, y )))
+            if(availablePlayerMoves.ContainsKey(new Vector2Int( x, y )))
             {
                 // move's good
-                applyMove(availableMoves[new Vector2Int(x, y)]);
+                applyMove(availablePlayerMoves[new Vector2Int(x, y)]);
 
                 // new cards
-                raised = new List<bool> { true, true, true, true, true };
+                playerRaisedCard = new List<bool> { true, true, true, true, true };
                 exchangeCards();
             }
             // no matter what, 
             // unhighlight the moves
-            availableMoves = null;
+            availablePlayerMoves = null;
             foreach (var c in FindObjectsOfType<ChessTileListener>())
             {
                 var baseCol = c.GetComponent<SpriteRenderer>().color;
@@ -219,12 +236,12 @@ public class GameManager : MonoBehaviour
                 return;
             }
 
-            availableMoves = new Dictionary<Vector2Int, ChessBoard>();
+            availablePlayerMoves = new Dictionary<Vector2Int, ChessBoard>();
 
             foreach (var v in board.movesForPiece(x, y))
             {
                 var diff = getMoveDiff(v,x,y);
-                availableMoves[diff] = v;
+                availablePlayerMoves[diff] = v;
                 // highlight the getMoveDiff
                 foreach(var c in FindObjectsOfType<ChessTileListener>())
                 {
@@ -259,9 +276,9 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        raised[index] = !raised[index];
-        handG.renderHand(playerHand, raised);
-        if(raised.Any(r => r))
+        playerRaisedCard[index] = !playerRaisedCard[index];
+        playerHandGraphic.renderHand(playerHand, playerRaisedCard, true);
+        if(playerRaisedCard.Any(r => r))
         {
             exchange.color = Color.white;
         }
@@ -287,19 +304,53 @@ public class GameManager : MonoBehaviour
         exchange.color = Color.gray;
         for (int i = 0; i != 5; ++i)
         {
-            if (raised[i])
+            if (playerRaisedCard[i])
             {
                 Deck.Card oldCard = playerHand[i];
                 playerHand[i] = deck[0];
                 deck.RemoveAt(0);
                 // put on bottom of deck
                 deck.Add(oldCard);
-                raised[i] = false;
+                playerRaisedCard[i] = false;
             }
         }
-        handG.renderHand(playerHand, raised);
+        playerHandGraphic.renderHand(playerHand, playerRaisedCard, true);
         Deck.Shuffle(deck);
-        Debug.Assert(deck.Count == 42);
+        Debug.Assert(deck.Count == (7*4 - 10));
+    }
+
+    private List<bool> getAIExchange(bool didMove)
+    {
+        var aiRaised = new List<bool> { false, false, false, false, false };
+        if (didMove)
+        {
+            aiRaised = new List<bool> { true, true, true, true, true };
+        }
+        else
+        {
+            aiRaised = new List<bool> { true, true, true, true, true };
+        }
+        return aiRaised;
+    }
+
+    private void exchangeCardsAI()
+    {
+        for (int i = 0; i != 5; ++i)
+        {
+            if (aiRaisedCard[i])
+            {
+                Deck.Card oldCard = aiHand[i];
+                aiHand[i] = deck[0];
+                deck.RemoveAt(0);
+                // put on bottom of deck
+                deck.Add(oldCard);
+                aiRaisedCard[i] = false;
+            }
+        }
+        aiHandGraphic.renderHand(aiHand, aiRaisedCard, false);
+        Deck.Shuffle(deck);
+        Debug.Assert(deck.Count == (7 * 4 - 10));
+        aiRaisedCard = new List<bool> { false, false, false, false, false };
     }
 
     //private 

@@ -15,13 +15,8 @@ public class Deck
 
     public enum Rank
     {
-        Two = 2,
-        Three,
-        Four,
-        Five,
-        Six,
-        Seven,
-        Eight,
+        // maybe 7?
+        Eight = 8,
         Nine,
         Ten,
         Jack,
@@ -49,12 +44,7 @@ public class Deck
     public static bool IsStraight(List<Card> hand)
     {
         var sortedRanks = hand.Select(card => (int)card.Rank).OrderBy(rank => rank).ToList();
-        if (sortedRanks.Last() == (int)Rank.Ace && sortedRanks.First() == (int)Rank.Two)
-        {
-            // Handle A-2-3-4-5 as a valid straight (wheel)
-            sortedRanks.Remove(sortedRanks.Last());
-            sortedRanks.Insert(0, 1);
-        }
+        // no need for wheel in short deck
         for (int i = 1; i < sortedRanks.Count; i++)
         {
             if (sortedRanks[i] != sortedRanks[i - 1] + 1)

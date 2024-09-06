@@ -315,4 +315,20 @@ public class ChessBoard
         }
         return true;
     }
+
+    // check if two boards are equal
+    public bool equals(ChessBoard other)
+    {
+        for (int y = 0; y != BOARD_DIM; ++y)
+        {
+            for (int x = 0; x != BOARD_DIM; ++x)
+            {
+                if (board[x, y] != other.board[x, y])
+                {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
 }
