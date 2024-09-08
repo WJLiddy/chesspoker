@@ -43,6 +43,8 @@ public class GameManager : MonoBehaviour
     public bool gameOver;
 
     public TMPro.TMP_Text descText;
+
+    public TMPro.TMP_Text aiResultText;
     // Start is called before the first frame update
     void Start()
     {
@@ -128,6 +130,11 @@ public class GameManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if(gameOverFlag)
+        {
+            return;
+        }
+
         if (!flipped)
         {
             // await player move
@@ -139,9 +146,41 @@ public class GameManager : MonoBehaviour
 
             if (timer > -2.5 && aiNextBoard == null)
             {
-                Debug.Log("AI HAS " + getHandLevel(aiHand));
                 aiNextBoard = ChessPokerAI.minimax(board, DIFFICULTY, true, aiHand).Item1;
                 aiRaisedCard = getAIExchange(!aiNextBoard.equals(board));
+
+                if(aiNextBoard.equals(board))
+                {
+                    aiResultText.text = "EXCHANGED";
+                }
+                else
+                {
+                    // eval AI hand and print
+                    if (Deck.IsFlush(aiHand))
+                    {
+                        aiResultText.text = "FLUSH";
+                    }
+                    else if(Deck.IsStraight(aiHand))
+                    {
+                        aiResultText.text = "STRAIGHT";
+                    }
+                    else if(Deck.IsThreeOfAKind(aiHand))
+                    {
+                        aiResultText.text = "THREE OF A KIND";
+                    }
+                    else if(Deck.IsTwoPair(aiHand))
+                    {
+                        aiResultText.text = "TWO PAIR";
+                    }
+                    else if(Deck.IsOnePair(aiHand))
+                    {
+                        aiResultText.text = "ONE PAIR";
+                    }
+                    else
+                    {
+                        aiResultText.text = "HIGH CARD";
+                    }   
+                }
 
 
                 // set TRUE for debug...
@@ -155,6 +194,7 @@ public class GameManager : MonoBehaviour
                 applyMove(aiNextBoard);
                 timer = -3;
                 aiNextBoard  = null;
+                aiResultText.text = "";
             }
         }
     }
@@ -176,6 +216,7 @@ public class GameManager : MonoBehaviour
             if (flipped)
             {
                 DIFFICULTY += 1;
+                DIFFICULTY = Mathf.Min(DIFFICULTY, 5);
             }
         }
     }
@@ -207,7 +248,7 @@ public class GameManager : MonoBehaviour
 
     public void tileClicked(int x, int y)
     {
-        if(flipped)
+        if(flipped || gameOverFlag)
         {
             // not player turn
             return;
@@ -276,7 +317,7 @@ public class GameManager : MonoBehaviour
 
     public void cardClicked(int index)
     {
-        if (flipped)
+        if (flipped || gameOverFlag)
         {
             // not player turn
             return;
@@ -296,7 +337,7 @@ public class GameManager : MonoBehaviour
 
     public void doExchange()
     {
-        if(flipped)
+        if(flipped || gameOverFlag)
         {
             // not player turn
             return;
@@ -325,7 +366,9 @@ public class GameManager : MonoBehaviour
         Debug.Assert(deck.Count == (7*4 - 10));
     }
 
-    // this method is hideous
+    /**
+
+    // this method is hideous, and it basically never happens anyway..
     private List<bool> goForStraightOrFlush()
     {
         var retVal = new List<bool> { false, false, false, false, false };
@@ -349,7 +392,6 @@ public class GameManager : MonoBehaviour
 
         if (foundSorF)
         {
-            Debug.Log("AI has low straight");
             // discard the highest card, it's not part of the straight.
             retVal[sortedAIHand.FindIndex(i => (i.Rank == sortedAIHand[4].Rank))] = true;
             return retVal;
@@ -370,7 +412,6 @@ public class GameManager : MonoBehaviour
 
         if (foundSorF)
         {
-            Debug.Log("AI has hi straight");
             // discard the lowest card, it's not part of the straight.
             retVal[sortedAIHand.FindIndex(i => (i.Rank == sortedAIHand[0].Rank))] = true;
             return retVal;
@@ -382,7 +423,6 @@ public class GameManager : MonoBehaviour
         var fourSuited = sortedAIHand.GroupBy(s => s.Suit).Select(g => g.Count() == 4);
         if(fourSuited.Count() == 1)
         {
-            Debug.Log("AI has four to a flush");
             // get the suit that we have four of.
             var suit = sortedAIHand.GroupBy(s => s.Suit).Where(g => g.Count() == 4).Select(g => g.Key).FirstOrDefault();
             // get the index of the suit that doesn't fit
@@ -395,6 +435,7 @@ public class GameManager : MonoBehaviour
         // all trash.
         return new List<bool> { true, true, true, true, true };
     }
+    */
 
     // very flawed but IDK. The "right" way to do this would be to go to minimax and evaluate the possible outcomes for each different card discarded
     // and weigh each outcome with it's probability, but I'm not exploring this idea any further
@@ -403,22 +444,26 @@ public class GameManager : MonoBehaviour
         var aiRaised = new List<bool> { false, false, false, false, false };
         if (didMove)
         {
-            Debug.Log("AI DID MOVE.");
             aiRaised = new List<bool> { true, true, true, true, true };
         }
         else
         {
-            // if we have a straight or a flush - keep it
             var handLevel = getHandLevel(aiHand);
             switch(handLevel)
             {
                 // high card
                 case 0:
-                    aiRaised = goForStraightOrFlush();
+                    aiRaised = new List<bool> { true, true, true, true, true };
                     break;
                 // pair or twopair
                 case 1:
                 case 2:
+                    // could go for S or F if one away, or just randomly
+                    if(UnityEngine.Random.Range(0,2) == 1)
+                    {
+                        return new List<bool> { true, true, true, true, true };
+                    }
+
                     // find the pair, try to improve to 3k
                     var pair = aiHand.GroupBy(c => c.Rank).Where(g => g.Count() == 2).Select(g => g.Key).FirstOrDefault();
                     // throw back all cards that ain't a pair
@@ -432,7 +477,7 @@ public class GameManager : MonoBehaviour
                     break;
                 // three of a kind. If the AI doesn't want to play this, it may want a straight or flush.
                 case 3:
-                    aiRaised = goForStraightOrFlush();
+                    aiRaised = new List<bool> { true, true, true, true, true };
                     break;
                 case 4:
                     // do nothing lol

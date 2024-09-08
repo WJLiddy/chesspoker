@@ -81,7 +81,6 @@ public class ChessPokerAI : MonoBehaviour
 
             //shuffle eq moves, so equivalent moves are not preferred.
             var shuf = node.generateMoves(GameManager.getHandLevel(hand));
-            shuf.Clear();
             // also add the ability to do nothing and improve the hand.
             shuf.Add(null);
             shuf.Shuffle();
